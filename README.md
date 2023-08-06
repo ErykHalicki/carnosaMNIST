@@ -1,5 +1,5 @@
 # carnosaMNIST
-    CNN with evolution based training written from scratch
+CNN with evolution based training written from scratch
 
 ## Version list
 ### v0.1 constant connection structure, constant connection size, 
