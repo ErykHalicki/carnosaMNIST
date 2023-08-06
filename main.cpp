@@ -54,8 +54,8 @@ void evaluate(network net,uchar* labels, uchar** images,int setSize,int offset,f
 }
 
 void evolve(network seed,int generations, int population,network* result){
-    uchar** images=read_mnist_images(std::string("/Users/erykhalicki/desktop/projects/carnosa/mnist/mnist/t10k-images.idx3-ubyte"),10000,784);
-    uchar* labels=read_mnist_labels(std::string("/Users/erykhalicki/desktop/projects/carnosa/mnist/mnist/t10k-labels.idx1-ubyte"),10000);
+    uchar** images=read_mnist_images(std::string("/Users/erykhalicki/desktop/projects/carnosa/mnist/mnist/train-images.idx3-ubyte"),60000,784);
+    uchar* labels=read_mnist_labels(std::string("/Users/erykhalicki/desktop/projects/carnosa/mnist/mnist/train-labels.idx1-ubyte"),60000);
 
     network* networks=(network*)malloc(sizeof(network)*population);
     //all networks must have the same connection structure as the first rancomly generated network
@@ -72,11 +72,11 @@ void evolve(network seed,int generations, int population,network* result){
         if(gen%50==0 && gen>0){
             std::cout<<"Generation "<<gen<<" best accuracy: "<<accuracies[0]<<'\n';
             srand (time(NULL));
-            offset=rand()%9000;
+            offset=rand()%50000;
         }
                 //srand (time(NULL));
         for(int n=0;n<population;n++){
-            threads[n]=std::thread(evaluate,networks[n],labels,images,100,offset,&accuracies[n]);
+            threads[n]=std::thread(evaluate,networks[n],labels,images,1000,gen,&accuracies[n]);
         }  
         for(int n=0;n<population;n++){
             threads[n].join();
@@ -130,7 +130,7 @@ int main(int argc, char** argv){
 
     network* best=(network*)malloc(sizeof(network));
     network seed;
-    seed.init(1,100,4,1);
+    seed.init(1,300,4,1);
     seed.randomize(1);
     /*
     float test[outputSize];
@@ -138,7 +138,7 @@ int main(int argc, char** argv){
     for(int i=0;i<outputSize;i++)
     std::cout<<test[i]<<'\n';
     */
-    evolve(seed,10000,12,best);
+    evolve(seed,1000,12,best);
     float res;
     evaluate(seed,labels,images,10000,0,&res);
     std::cout<<"Original Network Accuracy: "<<res<<"%\n";

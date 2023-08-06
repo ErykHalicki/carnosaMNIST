@@ -102,7 +102,8 @@ void network::run(unsigned char* input, float* result){
 void network::randomize(float multiplier){
     int rs= randomizationStrength*100;
     for(int l=0;l<layers-2;l++){
-        neurons[l+1][layer_size[l+1]];
+        if((rand()%100)/100.0<randomizationRate*multiplier)
+            neurons[l+1][layer_size[l+1]]+=(rand()%((rs*2+1))-rs)/100.0;;
         for(int i=0;i<(layer_size[l+1]+1)*layer_size[l+2]*std::fmax(1,randomizationRate*multiplier);i++){
             int pos=rand()%(layer_size[l+1]+1)*layer_size[l+2];
             if((pos+1)%(layer_size[l+1]+1)!=0)
