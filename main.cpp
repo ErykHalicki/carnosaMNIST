@@ -35,19 +35,12 @@ void print_convolution(network net, uchar* image){
 }
 
 void evaluate(network net,uchar* labels, uchar** images,int setSize,int offset,float* output){
-    float score=0,best=0;
-    float* result=(float*)malloc(sizeof(float)*outputSize);
+    float score=0,best=0, *result=(float*)malloc(sizeof(float)*outputSize);
     unsigned long prediction=0;
     for(int n=offset;n<offset+setSize;n++){
-        //print_image(images[n]);
-        best=0;
         net.run(images[n],result);
         vDSP_maxvi(result,1,&best,&prediction,outputSize);
-        if(labels[n]==prediction){
-            score++;
-        }
-        //print_image(images[n]);
-        //print_convolution(net, images[n]);
+        if(labels[n]==prediction) score++;
     }
     free(result);
     *output=(score/setSize)*100.0;//returns score as accuracy percentage
@@ -58,11 +51,9 @@ void evolve(network seed,int generations, int population,network* result){
     uchar* labels=read_mnist_labels(std::string("/Users/erykhalicki/desktop/projects/carnosa/mnist/mnist/train-labels.idx1-ubyte"),60000);
 
     network* networks=(network*)malloc(sizeof(network)*population);
-    //all networks must have the same connection structure as the first rancomly generated network
     for(int i=0;i<population;i++){
         networks[i].copy(seed);
     }
-
     float accuracies[population];
     float best_accuracy=0;
     int last_increase=0;
@@ -72,11 +63,10 @@ void evolve(network seed,int generations, int population,network* result){
         if(gen%50==0 && gen>0){
             std::cout<<"Generation "<<gen<<" best accuracy: "<<accuracies[0]<<'\n';
             srand (time(NULL));
-            offset=rand()%50000;
+            offset+=5;
         }
-                //srand (time(NULL));
         for(int n=0;n<population;n++){
-            threads[n]=std::thread(evaluate,networks[n],labels,images,1000,gen,&accuracies[n]);
+            threads[n]=std::thread(evaluate,networks[n],labels,images,500,offset,&accuracies[n]);
         }  
         for(int n=0;n<population;n++){
             threads[n].join();
@@ -104,23 +94,11 @@ void evolve(network seed,int generations, int population,network* result){
             best_accuracy=accuracies[0];
             last_increase=gen;
         }
-
-        if(gen-last_increase>50){
-            for(int i=1;i<population;i++)
-                networks[i].randomize(1+(gen-last_increase)/50.0);
-                //last_increase=gen; 
-        }
-        else{
-            for(int i=2;i<population-4;i++){
-                networks[i].randomize(1);
-            }
-        }
+        for(int i=1;i<population;i++)
+            networks[i].randomize((gen-last_increase)/50.0);
     }
     memcpy(result,networks,sizeof(network));
 }
-
-//
-//add parent elimination to get out of ruts, find better ways to introduce competition
 
 int main(int argc, char** argv){
     srand (time(NULL));
@@ -146,26 +124,3 @@ int main(int argc, char** argv){
     std::cout<<"Final Network Accuracy: "<<res<<"%";
    	return 0;	
 }
-/* Version list
- * v0.1 - constant connection structure, constant connection size, 
- *      ~25% accuracy
- *
- * v0.2 - mutable connection Structure, constant connection size 
- *      ~35% accuracy
- *
- * v0.3 - mutable connection structure, constant connection size
- *      - Added convolution
- *      - added weighted accuracy (more confident answers have higher weight)
- *      ~36% accuracy
- *
- * v0.4 - fully connected (immutable) structure
- *      - weight representation changed to matrix form
- *      - added accelerated matrix multiplication (Apple Accelerate Library)
- *      - added threaded training
- *      - added biases
- *      - removed weighted accuracy
- *
- *      ~51% accuracy
- *
- *
- */

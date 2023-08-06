@@ -6,16 +6,15 @@
 
 void network::init(int l, int ninl,int k_s,int s){
     layers=l+3;
-    //add max connection number (the amount of connections in a fully connected network)
+    connectionNum=pow(convolution_layer_size,2)*ninl + pow(ninl,l)+ ninl*outputSize;
     neuronInLayer=ninl;
-    neurons=(float**)malloc(sizeof(float*)*layers);
-    layer_size=(int*)malloc(sizeof(int*)*layers);
-
     kernel_size=k_s;
     stride=s;
     convolution_layer_size=((input_width/stride)-k_s+1);
+
+    neurons=(float**)malloc(sizeof(float*)*layers);
+    layer_size=(int*)malloc(sizeof(int*)*layers);
     kernel=(float**)malloc(sizeof(float*)*k_s);
-    connectionNum=pow(convolution_layer_size,2)*ninl + pow(ninl,l)+ ninl*outputSize;
 
     for(int i=0;i<k_s;i++){
         kernel[i]=(float*)malloc(sizeof(float)*k_s);
@@ -60,21 +59,18 @@ void network::clear(){
     }
 }
 float network::inner_product(int offset_x, int offset_y){
-    //+28 of any index is the next line
     float sum=0;
     for(int i=0;i<kernel_size;i++){
         for(int j=0;j<kernel_size;j++){
             sum+=neurons[0][(i+offset_y)*input_width+(j+offset_x)]*kernel[i][j];
-            //std::cout<<sum<<'\n';
         }
     }
     return sum;
 }
 void network::run(unsigned char* input, float* result){
-    //loading input values to layer 0 
     clear();
     for(int i=0;i<inputSize;i++){
-        neurons[0][i]=std::min(255,(int)input[i])/255.0;//stored row significant
+        neurons[0][i]=std::min(255,(int)input[i])/255.0;//stored row major
     }
     
     for(int i=0;i<convolution_layer_size;i++){
@@ -126,6 +122,10 @@ void reproduce(network n1, network n2,network* offspring){
         memcpy(offspring[1].weights[i],&n1.weights[i][n1.layer_size[i+2]*(n1.layer_size[i+1]+1)/2 - 1],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1)/2);
         memcpy(offspring[2].weights[i],n1.weights[i],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1));
         memcpy(offspring[3].weights[i],n2.weights[i],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1));
+        offspring[0].neurons[i+1][offspring[0].layer_size[i+1]]=n1.neurons[i+1][n1.layer_size[i+1]];
+        offspring[1].neurons[i+1][offspring[1].layer_size[i+1]]=n2.neurons[i+1][n1.layer_size[i+1]];
+        offspring[2].neurons[i+1][offspring[2].layer_size[i+1]]=n1.neurons[i+1][n1.layer_size[i+1]];
+        offspring[3].neurons[i+1][offspring[3].layer_size[i+1]]=n2.neurons[i+1][n1.layer_size[i+1]];
     }
 
     for(int i=0;i<offspring[0].kernel_size;i++){
@@ -142,7 +142,6 @@ void reproduce(network n1, network n2,network* offspring){
     }
 
     for(int i=2;i<4;i++){
-        //offspring[i].rearrange_connection(100);
         offspring[i].randomize(1);
     }
 }
@@ -154,22 +153,18 @@ void network::copy(network net){
     kernel_size=net.kernel_size;
     stride=net.stride;
     convolution_layer_size=net.convolution_layer_size;
+
+    weights=(float**)malloc(sizeof(float*)*(layers-2));
+    neurons=(float**)malloc(sizeof(float*)*layers);
+    layer_size=(int*)malloc(sizeof(int*)*layers);
     kernel=(float**)malloc(sizeof(float*)*kernel_size);
+
     for(int i=0;i<kernel_size;i++){
         kernel[i]=(float*)malloc(sizeof(float)*kernel_size);
         for(int j=0;j<kernel_size;j++){
             kernel[i][j]=net.kernel[i][j];
         }
     }
-    
-    weights=(float**)malloc(sizeof(float*)*(layers-2));
-
-    neurons=(float**)malloc(sizeof(float*)*layers);
-    layer_size=(int*)malloc(sizeof(int*)*layers);
-
-    weights=(float**)malloc(sizeof(float*)*(layers-2));
-
-    int conn_num=0;
     for(int i=0;i<layers;i++){
         if(i==0){
             neurons[i]=(float*)malloc(sizeof(float)*inputSize);//input layer
@@ -235,9 +230,8 @@ void network::read(std::string name){
     */
 }
 
-void network::randomize_kernel(float percentage){//TODO test this fucntion
+void network::randomize_kernel(float percentage){
     int rs= randomizationStrength*100;
-
     for(int i=0;i<kernel_size;i++){
         for(int j=0;j<kernel_size;j++){
             if((rand()%100+1)/100.0 <= percentage){
