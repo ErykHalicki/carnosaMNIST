@@ -34,8 +34,8 @@ void print_convolution(network net, uchar* image){
     }
 }
 
-void evaluate(network net,uchar* labels, uchar** images,int setSize,int offset,float* output){
-    float score=0,best=0, *result=(float*)malloc(sizeof(float)*outputSize);
+void evaluate(network net,uchar* labels, uchar** images,int setSize,int offset,float* output,bool training){
+    float score=0,best=0, *result=(float*)malloc(sizeof(float)*outputSize), correct=0;
     unsigned long prediction=0;
     for(int n=offset;n<offset+setSize;n++){
         net.run(images[n],result);
