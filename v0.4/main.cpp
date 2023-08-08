@@ -40,20 +40,10 @@ void evaluate(network net,uchar* labels, uchar** images,int setSize,int offset,f
     for(int n=offset;n<offset+setSize;n++){
         net.run(images[n],result);
         vDSP_maxvi(result,1,&best,&prediction,outputSize);
-        if(training){
-            for(int i=0;i<outputSize;i++){
-                correct=0;
-                if(i==labels[n])correct=100;
-                score-=pow(correct-result[i],2)/2;
-            }
-        }
-        else{
-            if(labels[n]==prediction)score++;
-        }
+        if(labels[n]==prediction) score++;
     }
     free(result);
-    *output=(score/setSize)*100;
-    if(training) *output=score/(setSize*setSize);
+    *output=(score/setSize)*100.0;//returns score as accuracy percentage
 }
 
 void evolve(network seed,int generations, int population,network* result){
@@ -68,16 +58,15 @@ void evolve(network seed,int generations, int population,network* result){
     float best_accuracy=0;
     int last_increase=0;
     int offset=0;
-    int size=100;
     std::thread threads[population];
     for(int gen=0;gen<generations;gen++){
         if(gen%50==0 && gen>0){
             std::cout<<"Generation "<<gen<<" best accuracy: "<<accuracies[0]<<'\n';
-            //srand (time(NULL));
-            offset=rand()%(60000-size);
+            srand (time(NULL));
+            offset+=5;
         }
         for(int n=0;n<population;n++){
-            threads[n]=std::thread(evaluate,networks[n],labels,images,size,offset,&accuracies[n],true);
+            threads[n]=std::thread(evaluate,networks[n],labels,images,500,0,&accuracies[n]);
         }  
         for(int n=0;n<population;n++){
             threads[n].join();
@@ -113,25 +102,25 @@ void evolve(network seed,int generations, int population,network* result){
 
 int main(int argc, char** argv){
     srand (time(NULL));
-    std::cout<<"Carnosa_MNIST v0.5\n";
+    std::cout<<"Carnosa_MNIST v0.4\n";
     uchar** images=read_mnist_images(std::string("/Users/erykhalicki/desktop/projects/carnosa/mnist/data/t10k-images.idx3-ubyte"),10000,784);
     uchar* labels=read_mnist_labels(std::string("/Users/erykhalicki/desktop/projects/carnosa/mnist/data/t10k-labels.idx1-ubyte"),10000);
 
     network* best=(network*)malloc(sizeof(network));
     network seed;
-    seed.init(1,800,4,1);
-    seed.randomize(1);
+    seed.init(1,100,4,1);
+    seed.randomize(100);
     /*
     float test[outputSize];
     seed.run(images[0],test);
     for(int i=0;i<outputSize;i++)
     std::cout<<test[i]<<'\n';
     */
-    evolve(seed,600,7,best);
+    evolve(seed,3000,10,best);
     float res;
-    evaluate(seed,labels,images,10000,0,&res,false);
+    evaluate(seed,labels,images,10000,0,&res);
     std::cout<<"Original Network Accuracy: "<<res<<"%\n";
-    evaluate(*best,labels,images,10000,0,&res,false);
+    evaluate(*best,labels,images,10000,0,&res);
     std::cout<<"Final Network Accuracy: "<<res<<"%";
    	return 0;	
 }

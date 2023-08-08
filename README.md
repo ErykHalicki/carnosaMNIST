@@ -1,6 +1,10 @@
 # carnosaMNIST
 CNN with evolution based training written from scratch
 
+main.cpp contains the evaluation and main loop function
+
+net.cpp contains all network related functions 
+
 ## Version list
 ### v0.1 constant connection structure, constant connection size, 
 - tested using around 15000 connections, inlcuding skipped connections
@@ -32,4 +36,4 @@ CNN with evolution based training written from scratch
 - every x generations, does reproduction, randomization, etc.
 - between every reproduction cycle, uses gradient descent to adjust the weights and biases of the network
 
-~?% accuracy
+~52.75% accuracy
