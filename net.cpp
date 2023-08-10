@@ -67,6 +67,10 @@ float network::inner_product(int offset_x, int offset_y){
     }
     return sum;
 }
+float activation(float inp){
+    return std::fmax(0,inp);
+    return 1/(1+pow(2.718,-inp*3));
+}
 void network::run(unsigned char* input, float* result){
     clear();
     for(int i=0;i<inputSize;i++){
@@ -82,7 +86,7 @@ void network::run(unsigned char* input, float* result){
     for(int i=0;i<layers-2;i++){
         vDSP_mmul(weights[i],1,neurons[i+1],1,neurons[i+2],1,layer_size[i+2],1,layer_size[i+1]+1);
         for(int j=0;j<layer_size[i+2];j++){
-            neurons[i+2][j]=std::fmax(0,neurons[i+2][j]);//relu
+            neurons[i+2][j]=activation(neurons[i+2][j]);//ReLu
         }
     }
     float sum=0;

@@ -119,7 +119,7 @@ int main(int argc, char** argv){
 
     network* best=(network*)malloc(sizeof(network));
     network seed;
-    seed.init(1,800,4,1);
+    seed.init(1,200,4,1);
     seed.randomize(1);
     /*
     float test[outputSize];
@@ -127,7 +127,7 @@ int main(int argc, char** argv){
     for(int i=0;i<outputSize;i++)
     std::cout<<test[i]<<'\n';
     */
-    evolve(seed,600,7,best);
+    evolve(seed,1000,7,best);
     float res;
     evaluate(seed,labels,images,10000,0,&res,false);
     std::cout<<"Original Network Accuracy: "<<res<<"%\n";
