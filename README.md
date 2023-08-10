@@ -29,11 +29,11 @@ net.cpp contains all network related functions
 - added biases
 - removed weighted accuracy 
 
-~51% accuracy
+~52.75% accuracy
 
 ### v0.5 fully connected, backpropogation + evolution
 - mix of back propogation and evolution based training
 - every x generations, does reproduction, randomization, etc.
 - between every reproduction cycle, uses gradient descent to adjust the weights and biases of the network
 
-~52.75% accuracy
+~?% accuracy
