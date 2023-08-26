@@ -48,7 +48,7 @@ void network::init(int l, int ninl,int k_s,int s){
             weights[i][j]=1;
         }
     }
-    std::cout<<"connectionNum: "<<connectionNum<<'\n';
+    //std::cout<<"connectionNum: "<<connectionNum<<'\n';
     clear();
 }
 void network::clear(){
@@ -115,7 +115,7 @@ void network::randomize(float multiplier){
             // | 3 4 |
         }
     }
-    randomize_kernel(0.1);
+    randomize_kernel(0.1*multiplier);
 }
 
 void reproduce(network n1, network n2,network* offspring){

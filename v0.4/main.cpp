@@ -81,7 +81,7 @@ void evolve(network seed,int generations, int population,network* result){
                     accuracies[j]=accuracies[j+1];
                     accuracies[j+1]=tempf;
                 }
-            }
+            
         }
 
         for (int n = 0; n < population; n++) {

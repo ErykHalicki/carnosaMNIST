@@ -29,9 +29,20 @@ net.cpp contains all network related functions
 - added biases
 - removed weighted accuracy 
 
-~52.75% accuracy
+~62% accuracy with 784-100-10 CNN with 4x4 kernel
 
-### v0.5 fully connected, backpropogation + evolution
+### v0.45 fully connected, backpropogation inspired gene mixing
+#### (scrapped, resulted in slower training)
+- instead of modifying a random subset of genes
+- every generation only a small subset of the weights can be modified
+- similarly to backpropogation, where every weight is adjusted one at a time 
+- however instead of taking the partial derivative of the cost function with respect to the weight
+- we just change the weight by a random amount
+- this should ideally prevent the network from getting stuck in local minima
+
+<62% accuracy
+
+### v0.5 fully connected, backpropogation+evolution
 - mix of back propogation and evolution based training
 - every x generations, does reproduction, randomization, etc.
 - between every reproduction cycle, uses gradient descent to adjust the weights and biases of the network
