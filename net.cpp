@@ -69,8 +69,9 @@ float network::inner_product(int offset_x, int offset_y){
 }
 float activation(float inp){
     return std::fmax(0,inp);
-    return 1/(1+pow(2.718,-inp*3));
+    //return 1/(1+pow(2.718,-inp*3));
 }
+
 void network::run(unsigned char* input, float* result){
     clear();
     for(int i=0;i<inputSize;i++){
@@ -79,7 +80,7 @@ void network::run(unsigned char* input, float* result){
     
     for(int i=0;i<convolution_layer_size;i++){
         for(int j=0;j<convolution_layer_size;j++){
-            neurons[1][i+j*convolution_layer_size]=inner_product(j*stride,i*stride);//setting convolution layer
+            neurons[1][i+j*convolution_layer_size]=inner_product(i*stride,j*stride);//setting convolution layer
         }
     }
 
@@ -93,14 +94,13 @@ void network::run(unsigned char* input, float* result){
     for(int i=0;i<outputSize;i++){
         sum+=neurons[layers-1][i];
     }
-
     for(int i=0;i<outputSize;i++){
-        result[i]=(neurons[layers-1][i]/sum)*100.0;
+        result[i]=fmax(0,(neurons[layers-1][i]/sum)*100.0);
     }
 }
 
 void network::randomize(float multiplier){
-    int rs= randomizationStrength*100;
+    int rs= randomizationPower*100;
     for(int l=0;l<layers-2;l++){
         if((rand()%100)/100.0<randomizationRate*multiplier)
             neurons[l+1][layer_size[l+1]]+=(rand()%((rs*2+1))-rs)/100.0;;
@@ -126,10 +126,16 @@ void reproduce(network n1, network n2,network* offspring){
         memcpy(offspring[1].weights[i],&n1.weights[i][n1.layer_size[i+2]*(n1.layer_size[i+1]+1)/2 - 1],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1)/2);
         memcpy(offspring[2].weights[i],n1.weights[i],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1));
         memcpy(offspring[3].weights[i],n2.weights[i],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1));
-        offspring[0].neurons[i+1][offspring[0].layer_size[i+1]]=n1.neurons[i+1][n1.layer_size[i+1]];
+        memcpy(offspring[4].weights[i],n1.weights[i],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1));
+        for(int j=0;j<(n1.layer_size[i+1]+1)*n1.layer_size[i+2];j++){
+            offspring[4].weights[i][j]+=n2.weights[i][j];
+            offspring[4].weights[i][j]/=2;
+        }
+        /*offspring[0].neurons[i+1][offspring[0].layer_size[i+1]]=n1.neurons[i+1][n1.layer_size[i+1]];
         offspring[1].neurons[i+1][offspring[1].layer_size[i+1]]=n2.neurons[i+1][n1.layer_size[i+1]];
         offspring[2].neurons[i+1][offspring[2].layer_size[i+1]]=n1.neurons[i+1][n1.layer_size[i+1]];
         offspring[3].neurons[i+1][offspring[3].layer_size[i+1]]=n2.neurons[i+1][n1.layer_size[i+1]];
+        */
     }
 
     for(int i=0;i<offspring[0].kernel_size;i++){
@@ -235,7 +241,7 @@ void network::read(std::string name){
 }
 
 void network::randomize_kernel(float percentage){
-    int rs= randomizationStrength*100;
+    int rs= randomizationPower*100;
     for(int i=0;i<kernel_size;i++){
         for(int j=0;j<kernel_size;j++){
             if((rand()%100+1)/100.0 <= percentage){
