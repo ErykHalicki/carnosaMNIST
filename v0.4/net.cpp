@@ -5,13 +5,12 @@
 #include <Accelerate/Accelerate.h>
 
 void network::init(int l, int ninl,int k_s,int s){
-    layers=l+4;
+    layers=l+3;
     connectionNum=pow(convolution_layer_size,2)*ninl + pow(ninl,l)+ ninl*outputSize;
     neuronInLayer=ninl;
     kernel_size=k_s;
     stride=s;
     convolution_layer_size=((input_width/stride)-k_s+1);
-    pooling_layer_size=((convolution_layer_size/2)-1);
 
     neurons=(float**)malloc(sizeof(float*)*layers);
     layer_size=(int*)malloc(sizeof(int*)*layers);
@@ -23,7 +22,7 @@ void network::init(int l, int ninl,int k_s,int s){
             kernel[i][j]=1;
         }
     }
-    weights=(float**)malloc(sizeof(float*)*(layers-3));
+    weights=(float**)malloc(sizeof(float*)*(layers-2));
     int conn_num=0;
     for(int i=0;i<layers;i++){
         if(i==0){
@@ -31,12 +30,8 @@ void network::init(int l, int ninl,int k_s,int s){
             layer_size[i]=inputSize;
         }
         else if(i==1){
-            neurons[i]=(float*)malloc(sizeof(float)*(pow(convolution_layer_size,2)+1));//convolution layer
+            neurons[i]=(float*)malloc(sizeof(float)*pow(convolution_layer_size,2)+1);//convolution layer
             layer_size[i]=pow(convolution_layer_size,2);
-        }
-        else if(i==2){
-            neurons[i]=(float*)malloc(sizeof(float)*(pow(pooling_layer_size,2)+1));//pooling layer
-            layer_size[i]=pow(pooling_layer_size,2);
         }
         else if(i==layers-1){
             neurons[i]=(float*)malloc(sizeof(float)*outputSize);// output layer
@@ -47,9 +42,9 @@ void network::init(int l, int ninl,int k_s,int s){
             layer_size[i]=neuronInLayer;
         }
     }
-    for(int i=0;i<layers-3;i++){
-        weights[i]=(float*)malloc(sizeof(float)*layer_size[i+3]*(layer_size[i+2]+1));
-        for(int j=0;j<layer_size[i+3]*(layer_size[i+2]+1);j++){
+    for(int i=0;i<layers-2;i++){
+        weights[i]=(float*)malloc(sizeof(float)*layer_size[i+2]*(layer_size[i+1]+1));
+        for(int j=0;j<layer_size[i+2]*(layer_size[i+1]+1);j++){
             weights[i][j]=1;
         }
     }
@@ -72,17 +67,7 @@ float network::inner_product(int offset_x, int offset_y){
     }
     return sum;
 }
-float network::max_pool(int offset_x, int offset_y){
-    float max=0;
-    for(int i=0;i<2;i++){
-        for(int j=0;j<2;j++){
-            max=fmax(max,neurons[1][(i+offset_y)*convolution_layer_size+(j+offset_x)]);
-        }
-    }
-    return max;
-}
-
-inline float activation(float inp){
+float activation(float inp){
     return std::fmax(0,inp);
     //return 1/(1+pow(2.718,-inp*3));
 }
@@ -98,16 +83,11 @@ void network::run(unsigned char* input, float* result){
             neurons[1][i+j*convolution_layer_size]=inner_product(i*stride,j*stride);//setting convolution layer
         }
     }
-    for(int i=0;i<pooling_layer_size;i++){
-        for(int j=0;j<pooling_layer_size;j++){
-            neurons[2][i+j*pooling_layer_size]=max_pool(i*2,j*2);//setting pooling layer
-        }
-    }
 
-    for(int i=0;i<layers-3;i++){
-        vDSP_mmul(weights[i],1,neurons[i+2],1,neurons[i+3],1,layer_size[i+3],1,layer_size[i+2]+1);
-        for(int j=0;j<layer_size[i+3];j++){
-            neurons[i+3][j]=activation(neurons[i+3][j]);//ReLu
+    for(int i=0;i<layers-2;i++){
+        vDSP_mmul(weights[i],1,neurons[i+1],1,neurons[i+2],1,layer_size[i+2],1,layer_size[i+1]+1);
+        for(int j=0;j<layer_size[i+2];j++){
+            neurons[i+2][j]=activation(neurons[i+2][j]);//ReLu
         }
     }
     float sum=0;
@@ -121,12 +101,12 @@ void network::run(unsigned char* input, float* result){
 
 void network::randomize(float multiplier){
     int rs= randomizationPower*100;
-    for(int l=0;l<layers-3;l++){
-        //if((rand()%100)/100.0<randomizationRate*multiplier)
-            //neurons[l+1][layer_size[l+1]]+=(rand()%((rs*2+1))-rs)/100.0;;
-        for(int i=0;i<(layer_size[l+2]+1)*layer_size[l+3]*std::fmax(1,randomizationRate*multiplier);i++){
-            int pos=rand()%(layer_size[l+2]+1)*layer_size[l+3];
-            //if((pos+1)%(layer_size[l+1]+1)!=0)
+    for(int l=0;l<layers-2;l++){
+        if((rand()%100)/100.0<randomizationRate*multiplier)
+            neurons[l+1][layer_size[l+1]]+=(rand()%((rs*2+1))-rs)/100.0;;
+        for(int i=0;i<(layer_size[l+1]+1)*layer_size[l+2]*std::fmax(1,randomizationRate*multiplier);i++){
+            int pos=rand()%(layer_size[l+1]+1)*layer_size[l+2];
+            if((pos+1)%(layer_size[l+1]+1)!=0)
                 weights[l][pos]+=(rand()%((rs*2+1))-rs)/100.0;//from -rs to +rs
             //last layer_size[l+1] weights must be left alone, they are bias values 
             //this means the matrices will be stored row major
@@ -139,7 +119,7 @@ void network::randomize(float multiplier){
 }
 
 void reproduce(network n1, network n2,network* offspring){
-    for(int i=0;i<n1.layers-3;i++){
+    for(int i=0;i<n1.layers-2;i++){
         memcpy(offspring[0].weights[i],n1.weights[i],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1)/2);
         memcpy(offspring[0].weights[i],&n2.weights[i][n1.layer_size[i+2]*(n1.layer_size[i+1]+1)/2 - 1],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1)/2);
         memcpy(offspring[1].weights[i],n2.weights[i],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1)/2);
@@ -147,7 +127,7 @@ void reproduce(network n1, network n2,network* offspring){
         memcpy(offspring[2].weights[i],n1.weights[i],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1));
         memcpy(offspring[3].weights[i],n2.weights[i],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1));
         memcpy(offspring[4].weights[i],n1.weights[i],sizeof(float)*n1.layer_size[i+2]*(n1.layer_size[i+1]+1));
-        for(int j=0;j<(n1.layer_size[i+2]+1)*n1.layer_size[i+3];j++){
+        for(int j=0;j<(n1.layer_size[i+1]+1)*n1.layer_size[i+2];j++){
             offspring[4].weights[i][j]+=n2.weights[i][j];
             offspring[4].weights[i][j]/=2;
         }
@@ -183,9 +163,8 @@ void network::copy(network net){
     kernel_size=net.kernel_size;
     stride=net.stride;
     convolution_layer_size=net.convolution_layer_size;
-    pooling_layer_size=net.pooling_layer_size;
 
-    weights=(float**)malloc(sizeof(float*)*(layers-3));
+    weights=(float**)malloc(sizeof(float*)*(layers-2));
     neurons=(float**)malloc(sizeof(float*)*layers);
     layer_size=(int*)malloc(sizeof(int*)*layers);
     kernel=(float**)malloc(sizeof(float*)*kernel_size);
@@ -205,11 +184,6 @@ void network::copy(network net){
             neurons[i]=(float*)malloc(sizeof(float)*pow(convolution_layer_size,2)+1);//convolution layer
             layer_size[i]=pow(convolution_layer_size,2);
         }
-        else if(i==2){
-            neurons[i]=(float*)malloc(sizeof(float)*(pow(pooling_layer_size,2)+1));//pooling layer
-            layer_size[i]=pow(pooling_layer_size,2);
-        }
-
         else if(i==layers-1){
             neurons[i]=(float*)malloc(sizeof(float)*outputSize);// output layer
             layer_size[i]=outputSize;
@@ -219,7 +193,7 @@ void network::copy(network net){
             layer_size[i]=neuronInLayer;
         }
     }
-    for(int i=0;i<layers-3;i++){
+    for(int i=0;i<layers-2;i++){
         weights[i]=(float*)malloc(sizeof(float)*layer_size[i+2]*(layer_size[i+1]+1));
         for(int j=0;j<layer_size[i+2]*(layer_size[i+1]+1);j++){
             weights[i][j]=net.weights[i][j];

@@ -1,5 +1,7 @@
 # carnosaMNIST
 CNN with evolution based training written from scratch
+similar to a study conducted by Joseph Bruce from the University of Texas at Austin
+https://nn.cs.utexas.edu/downloads/papers/bruce.gecco2001.pdf
 
 main.cpp contains the evaluation and main loop function
 
@@ -42,8 +44,8 @@ net.cpp contains all network related functions
 
 <64% accuracy
 
-### v0.5 fully connected, with max pooling
-- added max pooling
+### v0.5 fully connected, mixture of experts model
+- joseph bruce paper
 
 ~?% accuracy
 

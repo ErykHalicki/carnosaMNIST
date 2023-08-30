@@ -34,6 +34,7 @@ void print_convolution(network net, uchar* image){
         else std::cout<<std::min(9,(int)net.neurons[1][i])<<" ";
     }
 }
+/*
 void print_pool(network net, uchar* image){
     float* result=(float*)malloc(sizeof(float)*outputSize);
     net.run(image,result);
@@ -45,7 +46,7 @@ void print_pool(network net, uchar* image){
         else std::cout<<std::min(9,(int)net.neurons[2][i])<<" ";
     }
 }
-
+*/
 void evaluate(network net,uchar* labels, uchar** images,int setSize,int offset,float* output, bool training){
     float score=0,best=0, *result=(float*)malloc(sizeof(float)*outputSize);
     unsigned long prediction=0;
@@ -96,17 +97,20 @@ void evolve(network seed,int generations, int population,network* result){
     network top;
     while(gen<generations || gen-last_increase_test<2000){
     //for(int gen=0;gen<generations;gen++){
-        if(gen%50==0 && gen>0){
+        if(gen%50==0){
             //srand (time(NULL));
-            //offset=rand()%(50000-size);
-            offset+=10;
+            //offset+=10;
             evaluate(networks[0],labels,images,10000,49999,&res,false);
             //if(randomizationPower<3)randomizationPower+=0.02;
             if(res>best_accuracy_test){
                 last_increase_test=gen;
+                top.copy(networks[0]);
                 best_accuracy_test=res;
+                size+=5;
             }
-            std::cout<<"Generation "<<gen<<" best accuracy: "<<res<<'\n';
+            else offset=rand()%(50000-size);
+            //for(int i=0;i<population;i++)networks[i].copy(top);
+            std::cout<<"Generation "<<gen<<" best accuracy: "<<res<<"% vs top "<<best_accuracy_test<<"% \n";
         }
         for(int n=0;n<population;n++){
             threads[n]=std::thread(evaluate,networks[n],labels,images,size,offset,&accuracies[n],true);
@@ -131,11 +135,17 @@ void evolve(network seed,int generations, int population,network* result){
         for (int n = 0; n < population; n++) {
                 //std::cout<<accuracies[n]<<"%"<<"\n";
         }
-                */
         //std::cout<<"Best score: "<<accuracies[0]<<"%"<<" gen "<<gen<<"\n";
         for(int i=0;i<population/7+1;i++){
             reproduce(networks[i*2],networks[i*2+1],&networks[population-(i+1)*5]);
         }
+
+                */
+
+        reproduce(networks[0],networks[population-1],&networks[population-20]);
+        reproduce(top,networks[0],&networks[population-5]);
+        reproduce(networks[0],networks[1],&networks[population-10]);
+        reproduce(networks[0],networks[2],&networks[population-15]);
         if(accuracies[0]>best_accuracy||gen==0){
             std::cout<<"new high score "<<(int)(accuracies[0]*10000)/10000.0<<" +"<<(int)((accuracies[0]-best_accuracy)*10000)/10000.0<<"% "<<"after "<<gen-last_increase<<" Gen\n";
             best_accuracy=accuracies[0];
@@ -163,13 +173,13 @@ void evolve(network seed,int generations, int population,network* result){
 
 int main(int argc, char** argv){
     srand (time(NULL));
-    std::cout<<"Carnosa_MNIST v0.5\n";
+    std::cout<<"Carnosa_MNIST v0.4\n";
     uchar** images=read_mnist_images(std::string("/Users/erykhalicki/desktop/projects/carnosa/mnist/data/t10k-images.idx3-ubyte"),10000,784);
     uchar* labels=read_mnist_labels(std::string("/Users/erykhalicki/desktop/projects/carnosa/mnist/data/t10k-labels.idx1-ubyte"),10000);
 
     network* best=(network*)malloc(sizeof(network));
     network seed;
-    seed.init(1,200,4,1);
+    seed.init(1,100,6,1);
     //seed.randomize(1);
     /*
     float test[outputSize];
@@ -177,8 +187,8 @@ int main(int argc, char** argv){
     for(int i=0;i<pow(seed.pooling_layer_size,2);i++)
         std::cout<<seed.neurons[2][i]<<'\n';
     */
-    print_convolution(seed,images[0]);
-    print_pool(seed,images[0]);
+    print_convolution(seed,images[rand()%1000]);
+    //print_pool(seed,images[0]);
     evolve(seed,1000,30,best);
     float res;
     evaluate(seed,labels,images,10000,0,&res,false);

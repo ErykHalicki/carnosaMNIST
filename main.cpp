@@ -70,7 +70,28 @@ void evaluate(network net,uchar* labels, uchar** images,int setSize,int offset,f
     else 
         *output=(score/(setSize*setSize));//returns score as accuracy percentage
 }
+int run_population(network* networks, int population,uchar* image){
+    int best_pick=0;
+    float max=0,*result=(float*)malloc(sizeof(float)*outputSize);
+    for(int i=0;i<population;i++){
+        networks[i].run(image, result);
+        for(int j=0;j<outputSize;j++){
+            if(result[j]>max){
+                max=result[j];
+                best_pick=j;
+            }
+        }
+    }
+    return best_pick;
+}
 
+void evaluate_population(network* nets,uchar* labels, uchar** images,int setSize,int offset,float* output, int population){
+    float score=0; 
+    for(int n=offset;n<offset+setSize;n++){
+        if(labels[n]==run_population(nets,population,images[n]))score++;
+    }
+    *output=(score/setSize)*100.0;//returns score as accuracy percentage
+}
 void evolve(network seed,int generations, int population,network* result){
     uchar** images=read_mnist_images(std::string("/Users/erykhalicki/desktop/projects/carnosa/mnist/data/train-images.idx3-ubyte"),60000,784);
     uchar* labels=read_mnist_labels(std::string("/Users/erykhalicki/desktop/projects/carnosa/mnist/data/train-labels.idx1-ubyte"),60000);
@@ -105,12 +126,13 @@ void evolve(network seed,int generations, int population,network* result){
             if(res>best_accuracy_test){
                 last_increase_test=gen;
                 top.copy(networks[0]);
-                for(int i=0;i<population;i++)networks[i].copy(top);
                 best_accuracy_test=res;
+                //size+=5;
             }
             else offset=rand()%(50000-size);
+            //for(int i=0;i<population;i++)networks[i].copy(top);
             std::cout<<"Generation "<<gen<<" best accuracy: "<<res<<"% vs top "<<best_accuracy_test<<"% \n";
-        }
+                    }
         for(int n=0;n<population;n++){
             threads[n]=std::thread(evaluate,networks[n],labels,images,size,offset,&accuracies[n],true);
         }  
@@ -130,6 +152,7 @@ void evolve(network seed,int generations, int population,network* result){
                 }      
             }
         }
+
         /*
         for (int n = 0; n < population; n++) {
                 //std::cout<<accuracies[n]<<"%"<<"\n";
@@ -140,7 +163,11 @@ void evolve(network seed,int generations, int population,network* result){
         }
 
                 */
-
+        if(gen%1000==0){
+            evaluate_population(networks,labels,images,1000,49999,&res,population/2);
+            std::cout<<"Generation "<<gen<<" population accuracy: "<<res<<"% \n";
+        }
+        //reproduce(networks[0],networks[population-1],&networks[population-20]);
         reproduce(top,networks[0],&networks[population-5]);
         reproduce(networks[0],networks[1],&networks[population-10]);
         reproduce(networks[0],networks[2],&networks[population-15]);
@@ -177,7 +204,7 @@ int main(int argc, char** argv){
 
     network* best=(network*)malloc(sizeof(network));
     network seed;
-    seed.init(1,200,3,1);
+    seed.init(1,170,4,1);
     //seed.randomize(1);
     /*
     float test[outputSize];

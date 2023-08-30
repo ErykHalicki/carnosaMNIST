@@ -37,7 +37,7 @@ class network{
     void serialize(std::string name);
     void read(std::string name);
     float inner_product(int x, int y);
-    float max_pool(int x, int y);
+    //float max_pool(int x, int y);
     void randomize_kernel(float multiplier);
 };
 void reproduce(network n1, network n2, network* offspring);
