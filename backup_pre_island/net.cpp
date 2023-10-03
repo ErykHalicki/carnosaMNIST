@@ -45,7 +45,7 @@ void network::init(int l, int ninl,int k_s,int s){
     for(int i=0;i<layers-2;i++){
         weights[i]=(float*)malloc(sizeof(float)*layer_size[i+2]*(layer_size[i+1]+1));
         for(int j=0;j<layer_size[i+2]*(layer_size[i+1]+1);j++){
-            weights[i][j]=rand()%3-1;
+            weights[i][j]=1;
         }
     }
     //std::cout<<"connectionNum: "<<connectionNum<<'\n';
@@ -91,7 +91,7 @@ void network::run(unsigned char* input, float* result){
         }
     }
     float sum=0;
-    for(int i=0;i<outputSize-1;i++){
+    for(int i=0;i<outputSize;i++){
         sum+=neurons[layers-1][i];
     }
     for(int i=0;i<outputSize;i++){

@@ -3,8 +3,8 @@
 
 #define inputSize 784//28*28 pixels
 #define outputSize 10//10 digits
-#define randomizationRate 0.05
-static float randomizationPower=0.5;
+#define randomizationRate 0.1
+static float randomizationPower=1;
 #define input_width 28
 
 /*
