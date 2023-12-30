@@ -55,3 +55,5 @@ net.cpp contains all network related functions
 - between every reproduction cycle, uses gradient descent to adjust the weights and biases of the network
 
 ~?% accuracy
+
+[![GitHub Trends SVG](https://api.githubtrends.io/user/svg/Stargor14/langs)](https://githubtrends.io)
